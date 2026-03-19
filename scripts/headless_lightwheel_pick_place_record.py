@@ -88,6 +88,8 @@ def main() -> int:
     prop_pick_position = pick_position + prop_stage_offset
     prop_place_position = place_position + prop_stage_offset
     prop_offset = np.array([0.0, 0.0, -0.07], dtype=np.float64)
+    prop_rest_orientation = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
+    initial_capture_steps = 45
 
     pedestal = world.scene.add(
         FixedCuboid(
@@ -140,10 +142,6 @@ def main() -> int:
     )
     franka.gripper.set_joint_positions(franka.gripper.joint_opened_positions)
 
-    for _ in range(30):
-        set_camera_view(eye=camera_eye_start, target=camera_target, camera_prim_path="/World/benchmark_camera")
-        world.step(render=True)
-
     prop_position = prop_pick_position.copy()
     carrying = False
     released = False
@@ -161,6 +159,19 @@ def main() -> int:
     print(f"camera_eye_start={camera_eye_start.tolist()}")
     print(f"camera_eye_end={camera_eye_end.tolist()}")
     print(f"camera_target={camera_target.tolist()}")
+    print(f"initial_capture_steps={initial_capture_steps}")
+
+    for lead_step in range(initial_capture_steps):
+        set_camera_view(eye=camera_eye_start, target=camera_target, camera_prim_path="/World/benchmark_camera")
+        prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
+        world.step(render=True)
+        prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
+
+        if lead_step % args.frame_stride == 0:
+            rgb = get_rgb_frame(camera, args.width, args.height)
+            if rgb is not None:
+                Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
+                saved_frames += 1
 
     for step in range(args.max_steps):
         alpha = 0.0 if args.max_steps <= 1 else min(step / 180.0, 1.0)
@@ -189,11 +200,11 @@ def main() -> int:
                 released = True
                 carrying = False
                 prop_position = prop_place_position.copy()
-                prop.set_world_pose(position=prop_position, orientation=np.array([1.0, 0.0, 0.0, 0.0]))
+                prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
         elif not released:
-            prop.set_world_pose(position=prop_position, orientation=np.array([1.0, 0.0, 0.0, 0.0]))
+            prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
         else:
-            prop.set_world_pose(position=prop_position, orientation=np.array([1.0, 0.0, 0.0, 0.0]))
+            prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
 
         if step % args.frame_stride == 0:
             rgb = get_rgb_frame(camera, args.width, args.height)
@@ -207,7 +218,7 @@ def main() -> int:
 
     for _ in range(15):
         world.step(render=True)
-        prop.set_world_pose(position=prop_position, orientation=np.array([1.0, 0.0, 0.0, 0.0]))
+        prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
         rgb = get_rgb_frame(camera, args.width, args.height)
         if rgb is not None:
             Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
