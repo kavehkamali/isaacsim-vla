@@ -276,8 +276,8 @@ def main() -> int:
         if settle_counter >= settle_required_stable_steps:
             break
 
-    pick_position = stable_prop_position - prop_offset
-    hold_position = pick_position.copy()
+    pick_position = stable_prop_position.copy()
+    hold_position = stable_prop_position.copy()
     hold_position[2] += lift_height
     hold_prop_position = stable_prop_position.copy()
     hold_prop_position[2] += lift_height
