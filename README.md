@@ -113,6 +113,18 @@ Lightwheel scripted pick-place:
 ./scripts/run_lightwheel_pick_place.sh
 ```
 
+Isaac Sim GUI for scene editing:
+
+```bash
+./scripts/run_isaacsim_gui.sh
+```
+
+You can also pass a custom stage path:
+
+```bash
+./scripts/run_isaacsim_gui.sh /home/kaveh/project/isaacsim-vla /path/to/scene.usd
+```
+
 All wrappers default to:
 
 - repo root as the workspace root
