@@ -12,7 +12,7 @@ Recommended structure:
 Recommended submodule command:
 
 ```bash
-git submodule add https://github.com/LightwheelAI/Lightwheel_Kitchen.git third_party/Lightwheel_Kitchen
+git submodule add -f https://github.com/LightwheelAI/Lightwheel_Kitchen.git third_party/Lightwheel_Kitchen
 git submodule update --init --recursive
 ```
 

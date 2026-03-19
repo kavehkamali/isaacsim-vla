@@ -31,11 +31,13 @@ Tracked source stays in git. Large binaries and extracted vendor assets stay ign
 For Lightwheel Kitchen, use a submodule:
 
 ```bash
-git submodule add https://github.com/LightwheelAI/Lightwheel_Kitchen.git third_party/Lightwheel_Kitchen
+git submodule add -f https://github.com/LightwheelAI/Lightwheel_Kitchen.git third_party/Lightwheel_Kitchen
 git submodule update --init --recursive
 ```
 
 Isaac Sim is not handled as a git submodule. Keep it as an extracted vendor dependency under `third_party/isaacsim/`.
+
+The path is ignored by default so that an existing checkout on a machine like `33` does not dirty the repo.
 
 ## Remote Setup
 

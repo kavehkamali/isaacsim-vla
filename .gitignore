@@ -11,3 +11,4 @@ third_party/downloads/*
 !third_party/downloads/.gitkeep
 third_party/isaacsim/*
 !third_party/isaacsim/.gitkeep
+third_party/Lightwheel_Kitchen/
