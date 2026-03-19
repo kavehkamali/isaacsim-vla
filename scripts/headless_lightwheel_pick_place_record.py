@@ -56,10 +56,15 @@ def wait_for_stage_loading(simulation_app: SimulationApp, is_stage_loading: obje
 
 
 def find_tracked_prop_path(stage: object, root_path: str) -> str:
-    candidate_path = f"{root_path}/root"
-    candidate_prim = stage.GetPrimAtPath(candidate_path)
-    if candidate_prim.IsValid():
-        return candidate_path
+    candidate_paths = (
+        f"{root_path}/Kitchen_Bottle_Clear",
+        f"{root_path}/Kitchen_Bottle",
+        f"{root_path}/root",
+    )
+    for candidate_path in candidate_paths:
+        candidate_prim = stage.GetPrimAtPath(candidate_path)
+        if candidate_prim.IsValid():
+            return candidate_path
     return root_path
 
 
