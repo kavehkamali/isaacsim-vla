@@ -12,6 +12,7 @@ EXTRA_ARGS=(
   "--reset-user"
   "--/renderer/activeGpu=0"
   "--/renderer/multiGpu/enabled=false"
+  "--/rtx/verifyDriverVersion/enabled=false"
 )
 
 if [[ -n "$ASSETS_ROOT_OVERRIDE" ]]; then

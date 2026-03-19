@@ -139,6 +139,8 @@ All wrappers default to:
 - `third_party/isaacsim/` for Isaac Sim
 - `third_party/Lightwheel_Kitchen/` for the Lightwheel kitchen scene
 
+The wrappers also pass `--/rtx/verifyDriverVersion/enabled=false` by default. This works around the known Omniverse Vulkan driver-version misdetection on Linux with `535.256+`, which otherwise can warn that a newer R535 driver is unsupported even when it is outside the known-bad range.
+
 The Lightwheel wrappers also auto-extract `third_party/Lightwheel_Kitchen/Lightwheel_Kitchen.zip` on first use if the kitchen USD tree is not already unpacked, but the recommended path is still to run `./scripts/prepare_workspace.sh` first.
 
 ## Config Notes

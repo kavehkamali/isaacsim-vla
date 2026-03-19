@@ -12,6 +12,9 @@ PROP_USD="${3:-}"
 OUTPUT_DIR="${4:-$ROOT_DIR/results/lightwheel_pick_place}"
 FRAMES_DIR="$OUTPUT_DIR/frames"
 VIDEO_PATH="$OUTPUT_DIR/lightwheel_pick_place.mp4"
+KIT_ARGS=(
+  "--/rtx/verifyDriverVersion/enabled=false"
+)
 
 export CUDA_VISIBLE_DEVICES=0
 
@@ -25,6 +28,7 @@ mkdir -p "$FRAMES_DIR"
 cd "$ISAACSIM_DIR"
 
 ./python.sh "$REPO_DIR/scripts/headless_lightwheel_pick_place_record.py" \
+  "${KIT_ARGS[@]}" \
   --stage-usd "$STAGE_USD" \
   --prop-usd "$PROP_USD" \
   --frames-dir "$FRAMES_DIR" \

@@ -10,6 +10,9 @@ STAGE_USD="${2:-}"
 OUTPUT_DIR="${3:-$ROOT_DIR/results/lightwheel_scene}"
 FRAMES_DIR="$OUTPUT_DIR/frames"
 VIDEO_PATH="$OUTPUT_DIR/lightwheel_kitchen_scene.mp4"
+KIT_ARGS=(
+  "--/rtx/verifyDriverVersion/enabled=false"
+)
 
 export CUDA_VISIBLE_DEVICES=0
 
@@ -22,6 +25,7 @@ mkdir -p "$FRAMES_DIR"
 cd "$ISAACSIM_DIR"
 
 ./python.sh "$REPO_DIR/scripts/headless_lightwheel_scene_record.py" \
+  "${KIT_ARGS[@]}" \
   --stage-usd "$STAGE_USD" \
   --frames-dir "$FRAMES_DIR" \
   --max-frames 120 \

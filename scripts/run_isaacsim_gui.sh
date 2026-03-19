@@ -29,6 +29,9 @@ done
 
 ISAACSIM_DIR="$ROOT_DIR/third_party/isaacsim"
 REPO_DIR="$ROOT_DIR"
+KIT_ARGS=(
+  "--/rtx/verifyDriverVersion/enabled=false"
+)
 
 export CUDA_VISIBLE_DEVICES=0
 
@@ -44,4 +47,4 @@ if [[ ! -x "$ISAACSIM_DIR/python.sh" ]]; then
 fi
 
 cd "$ISAACSIM_DIR"
-./python.sh "$REPO_DIR/scripts/gui_open_stage.py" --stage-usd "$STAGE_USD"
+./python.sh "$REPO_DIR/scripts/gui_open_stage.py" "${KIT_ARGS[@]}" --stage-usd "$STAGE_USD"
