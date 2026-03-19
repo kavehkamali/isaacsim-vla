@@ -1,0 +1,15 @@
+{
+  "policy_name": "pi05_adapter",
+  "adapter": "external_rpc",
+  "model_family": "pi0.5",
+  "action_space": "ee_delta_pose_with_gripper",
+  "observation_keys": [
+    "rgb_front",
+    "proprio"
+  ],
+  "transport": {
+    "kind": "http_or_local_process",
+    "port": 8082
+  },
+  "notes": "Reserved adapter slot for later policy integration."
+}

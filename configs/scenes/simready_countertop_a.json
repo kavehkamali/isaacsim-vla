@@ -1,0 +1,22 @@
+{
+  "scene_name": "simready_countertop_a",
+  "base_template": "scene_templates_or_simple_room",
+  "required_categories": [
+    "countertops",
+    "cabinets",
+    "mugs"
+  ],
+  "optional_categories": [
+    "shelves",
+    "tables",
+    "small_props"
+  ],
+  "randomization": {
+    "scene_seed": 101,
+    "mug_count_range": [
+      2,
+      5
+    ],
+    "counter_variant_count": 1
+  }
+}

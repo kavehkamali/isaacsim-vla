@@ -1,0 +1,6 @@
+{
+  "policy_name": "scripted",
+  "adapter": "scripted",
+  "action_space": "ee_delta_pose_with_gripper",
+  "notes": "Smoke-test baseline used before model adapters are attached."
+}

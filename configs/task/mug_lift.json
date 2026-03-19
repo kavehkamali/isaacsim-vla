@@ -1,0 +1,28 @@
+{
+  "task_name": "mug_lift",
+  "robot": {
+    "name": "franka_panda",
+    "asset_hint": "Franka Panda from Isaac Sim assets",
+    "gripper": "parallel_jaw"
+  },
+  "object": {
+    "category": "mug",
+    "spawn_height_m": 0.84,
+    "random_yaw": true
+  },
+  "success": {
+    "min_lift_height_m": 0.10,
+    "hold_steps": 15
+  },
+  "control": {
+    "control_hz": 30,
+    "max_episode_steps": 720
+  },
+  "camera": {
+    "primary": "agentview_front",
+    "resolution": [
+      1280,
+      720
+    ]
+  }
+}

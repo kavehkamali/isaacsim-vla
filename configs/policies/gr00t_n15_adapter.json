@@ -1,0 +1,15 @@
+{
+  "policy_name": "gr00t_n15_adapter",
+  "adapter": "external_rpc",
+  "model_family": "GR00T N1.5",
+  "action_space": "ee_delta_pose_with_gripper",
+  "observation_keys": [
+    "rgb_front",
+    "proprio"
+  ],
+  "transport": {
+    "kind": "http_or_local_process",
+    "port": 8081
+  },
+  "notes": "Adapter surface only. A Franka-specific checkpoint or adapter is still required for meaningful mug-lift control."
+}
