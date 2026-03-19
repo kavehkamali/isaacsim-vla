@@ -160,10 +160,10 @@ def main() -> int:
     settle_min_steps = 16
     settle_position_delta = 0.0015
     settle_required_stable_steps = 10
-    pick_attach_distance = 0.055
+    pick_attach_distance = 0.12
     min_carry_steps = 12
     lift_height = 0.12
-    hold_target_distance = 0.03
+    hold_target_distance = 0.06
     post_lift_hold_steps = 30
 
     pedestal = world.scene.add(
@@ -231,6 +231,8 @@ def main() -> int:
     saved_frames = 0
     camera_travel_steps = 90
     last_actions = None
+    min_pick_distance = float("inf")
+    min_hold_distance = float("inf")
 
     print(f"robot_position={robot_position.tolist()}")
     print(f"pedestal_height={pedestal_height}")
@@ -306,6 +308,7 @@ def main() -> int:
         end_effector_position, end_effector_orientation = franka.end_effector.get_world_pose()
         candidate_prop_position = np.asarray(end_effector_position) + prop_offset
         pick_distance = np.linalg.norm(candidate_prop_position - prop_position)
+        min_pick_distance = min(min_pick_distance, float(pick_distance))
 
         if (not carrying) and pick_distance <= pick_attach_distance:
             carrying = True
@@ -315,6 +318,7 @@ def main() -> int:
             prop_position = candidate_prop_position
             tracked_prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
             hold_distance = np.linalg.norm(prop_position - hold_prop_position)
+            min_hold_distance = min(min_hold_distance, float(hold_distance))
             if attach_step is not None and step - attach_step >= min_carry_steps and hold_distance <= hold_target_distance:
                 hold_done_step = step
                 done_step = step
@@ -354,6 +358,8 @@ def main() -> int:
     print(f"attach_step={attach_step}")
     print(f"hold_done_step={hold_done_step}")
     print(f"carrying={carrying}")
+    print(f"min_pick_distance={min_pick_distance}")
+    print(f"min_hold_distance={min_hold_distance}")
     print(f"final_prop_position={prop_position.tolist()}")
 
     video_writer.close()
