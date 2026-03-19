@@ -148,8 +148,8 @@ def main() -> int:
     prop_offset = np.array([0.0, 0.0, -0.07], dtype=np.float64)
     prop_rest_orientation = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
     initial_capture_steps = 24
-    pick_attach_distance = 0.045
-    place_release_distance = 0.035
+    pick_attach_distance = 0.055
+    place_release_distance = 0.045
     min_carry_steps = 12
     post_release_hold_steps = 24
 
