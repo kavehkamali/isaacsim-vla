@@ -55,19 +55,11 @@ def wait_for_stage_loading(simulation_app: SimulationApp, is_stage_loading: obje
     raise RuntimeError("Stage did not finish loading in time")
 
 
-def find_rigid_body_descendant_path(stage: object, root_path: str) -> str:
-    from pxr import UsdPhysics
-
-    root_prim = stage.GetPrimAtPath(root_path)
-    if not root_prim.IsValid():
-        return root_path
-
-    queue = [root_prim]
-    while queue:
-        prim = queue.pop(0)
-        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
-            return prim.GetPath().pathString
-        queue.extend(list(prim.GetChildren()))
+def find_tracked_prop_path(stage: object, root_path: str) -> str:
+    candidate_path = f"{root_path}/root"
+    candidate_prim = stage.GetPrimAtPath(candidate_path)
+    if candidate_prim.IsValid():
+        return candidate_path
     return root_path
 
 
@@ -193,7 +185,7 @@ def main() -> int:
     add_reference_to_stage(args.prop_usd, prop_root_path)
     prop_root = SingleXFormPrim(prop_root_path, name="benchmark_prop_root", position=prop_drop_position)
     stage = omni.usd.get_context().get_stage()
-    tracked_prop_path = find_rigid_body_descendant_path(stage, prop_root_path)
+    tracked_prop_path = find_tracked_prop_path(stage, prop_root_path)
     tracked_prop = SingleXFormPrim(tracked_prop_path, name="benchmark_prop_tracked")
 
     camera_eye_start = np.array([-0.96, -1.94, 2.34], dtype=np.float64)
@@ -210,7 +202,6 @@ def main() -> int:
 
     world.reset()
     prop_root.initialize()
-    tracked_prop.initialize()
     camera.initialize()
     camera.set_focal_length(1.9)
     camera.set_clipping_range(0.01, 10000.0)
