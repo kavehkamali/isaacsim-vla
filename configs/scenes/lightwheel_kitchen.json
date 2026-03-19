@@ -1,9 +1,9 @@
 {
   "name": "lightwheel_kitchen",
-  "stage_usd": "assets/lightwheel_kitchen/Collected_KitchenRoom/KitchenRoom.usd",
+  "stage_usd": "third_party/Lightwheel_Kitchen/Collected_KitchenRoom/KitchenRoom.usd",
   "pick_candidates": [
-    "Collected_KitchenRoom/Pot057/Pot057.usd",
-    "Collected_KitchenRoom/InteractiveAsset/SM_P_Flavour_02/Collected_SM_P_Flavour_02/Props/SM_P_Jar_01.usd",
-    "Collected_KitchenRoom/Kitchen_Other/Kitchen_Bottle.usd"
+    "third_party/Lightwheel_Kitchen/Collected_KitchenRoom/Pot057/Pot057.usd",
+    "third_party/Lightwheel_Kitchen/Collected_KitchenRoom/InteractiveAsset/SM_P_Flavour_02/Collected_SM_P_Flavour_02/Props/SM_P_Jar_01.usd",
+    "third_party/Lightwheel_Kitchen/Collected_KitchenRoom/Kitchen_Other/Kitchen_Bottle.usd"
   ]
 }

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="${1:-/home/kaveh/project/isaacsim_vla_muglift_lab_2026-03-18}"
-ISAACSIM_DIR="$ROOT_DIR/isaacsim"
-REPO_DIR="$ROOT_DIR/repo/isaacsim-vla"
-STAGE_USD="${2:-$ROOT_DIR/assets/lightwheel_kitchen/Collected_KitchenRoom/KitchenRoom.usd}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+ISAACSIM_DIR="$ROOT_DIR/third_party/isaacsim"
+REPO_DIR="$ROOT_DIR"
+STAGE_USD="${2:-$ROOT_DIR/third_party/Lightwheel_Kitchen/Collected_KitchenRoom/KitchenRoom.usd}"
 OUTPUT_DIR="${3:-$ROOT_DIR/results/lightwheel_scene}"
 FRAMES_DIR="$OUTPUT_DIR/frames"
 VIDEO_PATH="$OUTPUT_DIR/lightwheel_kitchen_scene.mp4"

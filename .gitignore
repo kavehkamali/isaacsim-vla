@@ -1,5 +1,13 @@
 .DS_Store
 __pycache__/
 *.pyc
+logs/*
+!logs/.gitkeep
 results/*
 !results/.gitkeep
+third_party/assets/*
+!third_party/assets/.gitkeep
+third_party/downloads/*
+!third_party/downloads/.gitkeep
+third_party/isaacsim/*
+!third_party/isaacsim/.gitkeep

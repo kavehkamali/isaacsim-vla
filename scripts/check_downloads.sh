@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="${1:-/home/kaveh/project/isaacsim_vla_muglift_lab_2026-03-18}"
-DOWNLOADS_DIR="$ROOT_DIR/downloads"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+DOWNLOADS_DIR="$ROOT_DIR/third_party/downloads"
 LOGS_DIR="$ROOT_DIR/logs"
 
 echo "[downloads]"

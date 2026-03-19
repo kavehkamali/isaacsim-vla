@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="${1:-/home/kaveh/project/isaacsim_vla_muglift_lab_2026-03-18}"
-ISAACSIM_DIR="$ROOT_DIR/isaacsim"
-REPO_DIR="$ROOT_DIR/repo/isaacsim-vla"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+ISAACSIM_DIR="$ROOT_DIR/third_party/isaacsim"
+REPO_DIR="$ROOT_DIR"
 OUTPUT_DIR="${2:-$ROOT_DIR/results/smoke_pick_place}"
 FRAMES_DIR="$OUTPUT_DIR/frames"
 VIDEO_PATH="$OUTPUT_DIR/smoke_pick_place.mp4"
