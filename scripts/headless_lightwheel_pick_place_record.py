@@ -140,14 +140,18 @@ def main() -> int:
     pedestal_height = 0.62
     robot_position = np.array([0.44, -0.50, pedestal_height], dtype=np.float64)
     robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 72.0]), degrees=True)
-    pick_position = np.array([0.40, -0.28, 1.18], dtype=np.float64)
-    place_position = np.array([0.50, -0.24, 1.18], dtype=np.float64)
-    prop_stage_offset = np.array([0.0, 0.0, 1.22], dtype=np.float64)
+    pick_position = np.array([0.20, 0.0, 1.10], dtype=np.float64)
+    place_position = np.array([-0.16, 0.0, 1.10], dtype=np.float64)
+    prop_stage_offset = np.array([0.0, 0.0, 0.10], dtype=np.float64)
     prop_pick_position = pick_position + prop_stage_offset
     prop_place_position = place_position + prop_stage_offset
     prop_offset = np.array([0.0, 0.0, -0.07], dtype=np.float64)
     prop_rest_orientation = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
     initial_capture_steps = 24
+    pick_attach_distance = 0.045
+    place_release_distance = 0.035
+    min_carry_steps = 12
+    post_release_hold_steps = 24
 
     pedestal = world.scene.add(
         FixedCuboid(
@@ -203,10 +207,10 @@ def main() -> int:
     prop_position = prop_pick_position.copy()
     carrying = False
     released = False
+    attach_step = None
+    release_done_step = None
     done_step = None
     saved_frames = 0
-    carry_start_step = 60
-    release_step = 130
     camera_travel_steps = 90
 
     print(f"robot_position={robot_position.tolist()}")
@@ -220,8 +224,9 @@ def main() -> int:
     print(f"camera_target={camera_target.tolist()}")
     print(f"initial_capture_steps={initial_capture_steps}")
     print(f"max_steps={args.max_steps}")
-    print(f"carry_start_step={carry_start_step}")
-    print(f"release_step={release_step}")
+    print(f"pick_attach_distance={pick_attach_distance}")
+    print(f"place_release_distance={place_release_distance}")
+    print(f"min_carry_steps={min_carry_steps}")
 
     for lead_step in range(initial_capture_steps):
         set_camera_view(eye=camera_eye_start, target=camera_target, camera_prim_path="/World/benchmark_camera")
@@ -253,16 +258,21 @@ def main() -> int:
         world.step(render=True)
 
         end_effector_position, end_effector_orientation = franka.end_effector.get_world_pose()
+        candidate_prop_position = np.asarray(end_effector_position) + prop_offset
+        pick_distance = np.linalg.norm(candidate_prop_position - prop_position)
 
-        if (not carrying) and step >= carry_start_step:
+        if (not carrying) and (not released) and pick_distance <= pick_attach_distance:
             carrying = True
+            attach_step = step
 
         if carrying and not released:
-            prop_position = np.asarray(end_effector_position) + prop_offset
+            prop_position = candidate_prop_position
             prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
-            if step >= release_step:
+            place_distance = np.linalg.norm(prop_position - prop_place_position)
+            if attach_step is not None and step - attach_step >= min_carry_steps and place_distance <= place_release_distance:
                 released = True
                 carrying = False
+                release_done_step = step
                 prop_position = prop_place_position.copy()
                 prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
         elif not released:
@@ -278,7 +288,7 @@ def main() -> int:
                     Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
                 saved_frames += 1
 
-        if step >= release_step + 60:
+        if release_done_step is not None and step >= release_done_step + post_release_hold_steps:
             done_step = step
             break
 
@@ -294,6 +304,8 @@ def main() -> int:
 
     print(f"saved_frames={saved_frames}")
     print(f"controller_done_step={done_step}")
+    print(f"attach_step={attach_step}")
+    print(f"release_done_step={release_done_step}")
     print(f"released={released}")
     print(f"final_prop_position={prop_position.tolist()}")
 
