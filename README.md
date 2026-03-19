@@ -114,6 +114,14 @@ Lightwheel scripted pick-place:
 ./scripts/run_lightwheel_pick_place.sh
 ```
 
+That wrapper now writes the MP4 directly during capture instead of dumping PNG frames first, so it is the faster default path.
+
+If you need per-frame PNGs for debugging a bad pickup or drop, opt in explicitly:
+
+```bash
+KEEP_FRAMES=1 ./scripts/run_lightwheel_pick_place.sh
+```
+
 Isaac Sim GUI for scene editing:
 
 ```bash

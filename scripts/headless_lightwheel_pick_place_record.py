@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import shutil
+import subprocess
 
 import numpy as np
 from PIL import Image
@@ -14,8 +16,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage-usd", required=True)
     parser.add_argument("--prop-usd", required=True)
-    parser.add_argument("--frames-dir", required=True)
-    parser.add_argument("--max-steps", type=int, default=720)
+    parser.add_argument("--frames-dir")
+    parser.add_argument("--video-path", required=True)
+    parser.add_argument("--max-steps", type=int, default=360)
     parser.add_argument("--frame-stride", type=int, default=2)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
@@ -52,10 +55,65 @@ def wait_for_stage_loading(simulation_app: SimulationApp, is_stage_loading: obje
     raise RuntimeError("Stage did not finish loading in time")
 
 
+class VideoWriter:
+    def __init__(self, video_path: str, width: int, height: int, framerate: int) -> None:
+        ffmpeg = shutil.which("ffmpeg")
+        if ffmpeg is None:
+            raise RuntimeError("ffmpeg is required on PATH for direct video capture")
+
+        self.video_path = Path(video_path)
+        self.video_path.parent.mkdir(parents=True, exist_ok=True)
+        self.process = subprocess.Popen(
+            [
+                ffmpeg,
+                "-loglevel",
+                "error",
+                "-y",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "rgb24",
+                "-s:v",
+                f"{width}x{height}",
+                "-r",
+                str(framerate),
+                "-i",
+                "-",
+                "-an",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                str(self.video_path),
+            ],
+            stdin=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+    def write(self, rgb: np.ndarray) -> None:
+        if self.process.stdin is None:
+            raise RuntimeError("ffmpeg stdin is not available")
+        self.process.stdin.write(np.ascontiguousarray(rgb).tobytes())
+
+    def close(self) -> None:
+        if self.process.stdin is not None:
+            self.process.stdin.close()
+        stderr = b""
+        if self.process.stderr is not None:
+            stderr = self.process.stderr.read()
+            self.process.stderr.close()
+        return_code = self.process.wait()
+        if return_code != 0:
+            message = stderr.decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"ffmpeg failed with code {return_code}: {message}")
+
+
 def main() -> int:
     args = parse_args()
-    frames_dir = Path(args.frames_dir)
-    frames_dir.mkdir(parents=True, exist_ok=True)
+    frames_dir = Path(args.frames_dir) if args.frames_dir else None
+    if frames_dir is not None:
+        frames_dir.mkdir(parents=True, exist_ok=True)
+    video_writer = VideoWriter(args.video_path, args.width, args.height, framerate=15)
 
     simulation_app = SimulationApp({"headless": True})
 
@@ -89,7 +147,7 @@ def main() -> int:
     prop_place_position = place_position + prop_stage_offset
     prop_offset = np.array([0.0, 0.0, -0.07], dtype=np.float64)
     prop_rest_orientation = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
-    initial_capture_steps = 45
+    initial_capture_steps = 24
 
     pedestal = world.scene.add(
         FixedCuboid(
@@ -147,8 +205,9 @@ def main() -> int:
     released = False
     done_step = None
     saved_frames = 0
-    carry_start_step = 120
-    release_step = 260
+    carry_start_step = 60
+    release_step = 130
+    camera_travel_steps = 90
 
     print(f"robot_position={robot_position.tolist()}")
     print(f"pedestal_height={pedestal_height}")
@@ -160,6 +219,9 @@ def main() -> int:
     print(f"camera_eye_end={camera_eye_end.tolist()}")
     print(f"camera_target={camera_target.tolist()}")
     print(f"initial_capture_steps={initial_capture_steps}")
+    print(f"max_steps={args.max_steps}")
+    print(f"carry_start_step={carry_start_step}")
+    print(f"release_step={release_step}")
 
     for lead_step in range(initial_capture_steps):
         set_camera_view(eye=camera_eye_start, target=camera_target, camera_prim_path="/World/benchmark_camera")
@@ -170,11 +232,13 @@ def main() -> int:
         if lead_step % args.frame_stride == 0:
             rgb = get_rgb_frame(camera, args.width, args.height)
             if rgb is not None:
-                Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
+                video_writer.write(rgb)
+                if frames_dir is not None:
+                    Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
                 saved_frames += 1
 
     for step in range(args.max_steps):
-        alpha = 0.0 if args.max_steps <= 1 else min(step / 180.0, 1.0)
+        alpha = 0.0 if camera_travel_steps <= 0 else min(step / float(camera_travel_steps), 1.0)
         eye = (1.0 - alpha) * camera_eye_start + alpha * camera_eye_end
         set_camera_view(eye=eye, target=camera_target, camera_prim_path="/World/benchmark_camera")
 
@@ -209,19 +273,23 @@ def main() -> int:
         if step % args.frame_stride == 0:
             rgb = get_rgb_frame(camera, args.width, args.height)
             if rgb is not None:
-                Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
+                video_writer.write(rgb)
+                if frames_dir is not None:
+                    Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
                 saved_frames += 1
 
-        if step >= release_step + 120:
+        if step >= release_step + 60:
             done_step = step
             break
 
-    for _ in range(15):
+    for _ in range(8):
         world.step(render=True)
         prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
         rgb = get_rgb_frame(camera, args.width, args.height)
         if rgb is not None:
-            Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
+            video_writer.write(rgb)
+            if frames_dir is not None:
+                Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
             saved_frames += 1
 
     print(f"saved_frames={saved_frames}")
@@ -229,6 +297,7 @@ def main() -> int:
     print(f"released={released}")
     print(f"final_prop_position={prop_position.tolist()}")
 
+    video_writer.close()
     simulation_app.close()
     return 0
 

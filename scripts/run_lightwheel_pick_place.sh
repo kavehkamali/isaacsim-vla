@@ -10,8 +10,8 @@ DEFAULT_PROP_USD="$ROOT_DIR/third_party/Lightwheel_Kitchen/Collected_KitchenRoom
 STAGE_USD="${2:-}"
 PROP_USD="${3:-}"
 OUTPUT_DIR="${4:-$ROOT_DIR/results/lightwheel_pick_place}"
-FRAMES_DIR="$OUTPUT_DIR/frames"
 VIDEO_PATH="$OUTPUT_DIR/lightwheel_pick_place.mp4"
+KEEP_FRAMES="${KEEP_FRAMES:-0}"
 KIT_ARGS=(
   "--/rtx/verifyDriverVersion/enabled=false"
 )
@@ -24,23 +24,32 @@ if [[ -z "$STAGE_USD" || -z "$PROP_USD" ]]; then
   PROP_USD="${PROP_USD:-${LIGHTWHEEL_PROP_USD:-$DEFAULT_PROP_USD}}"
 fi
 
-mkdir -p "$FRAMES_DIR"
+mkdir -p "$OUTPUT_DIR"
 cd "$ISAACSIM_DIR"
 
-./python.sh "$REPO_DIR/scripts/headless_lightwheel_pick_place_record.py" \
-  "${KIT_ARGS[@]}" \
-  --stage-usd "$STAGE_USD" \
-  --prop-usd "$PROP_USD" \
-  --frames-dir "$FRAMES_DIR" \
-  --max-steps 720 \
-  --frame-stride 2 \
-  --width 1280 \
+RUN_ARGS=(
+  "$REPO_DIR/scripts/headless_lightwheel_pick_place_record.py"
+  "${KIT_ARGS[@]}"
+  --stage-usd "$STAGE_USD"
+  --prop-usd "$PROP_USD"
+  --video-path "$VIDEO_PATH"
+  --max-steps 360
+  --frame-stride 2
+  --width 1280
   --height 720
+)
 
-if ! ls "$FRAMES_DIR"/frame_*.png >/dev/null 2>&1; then
-  echo "no_frames_written"
+if [[ "$KEEP_FRAMES" == "1" ]]; then
+  FRAMES_DIR="$OUTPUT_DIR/frames"
+  mkdir -p "$FRAMES_DIR"
+  RUN_ARGS+=(--frames-dir "$FRAMES_DIR")
+fi
+
+./python.sh "${RUN_ARGS[@]}"
+
+if [[ ! -f "$VIDEO_PATH" ]]; then
+  echo "video_not_written"
   exit 2
 fi
 
-ffmpeg -y -framerate 15 -i "$FRAMES_DIR/frame_%05d.png" -c:v libx264 -pix_fmt yuv420p "$VIDEO_PATH"
 echo "$VIDEO_PATH"
