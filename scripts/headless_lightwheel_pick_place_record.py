@@ -285,13 +285,13 @@ def main() -> int:
     hold_prop_position[2] += lift_height
     active_robot_position = np.array(
         [
-            stable_prop_position[0] + 0.18,
-            stable_prop_position[1] - 0.22,
+            stable_prop_position[0] + 0.12,
+            stable_prop_position[1] - 0.14,
             pedestal_height,
         ],
         dtype=np.float64,
     )
-    active_robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 92.0]), degrees=True)
+    active_robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 96.0]), degrees=True)
 
     pedestal.set_world_pose(
         position=np.array(
