@@ -1,12 +1,13 @@
 # isaacsim-vla
 
-Canonical workspace root for Isaac Sim VLA experiments.
+Canonical source repo for Isaac Sim VLA experiments.
 
-The repo itself is the workspace. On the remote machine the intended path is:
+The repo itself is the workspace when you run locally. Current machine-specific roots:
 
-`/home/kaveh/project/isaacsim-vla`
+- `home-linux`: `/home/kaveh/projects/API/isaacsim-vla`
+- `10.225.68.33`: `/home/kaveh/project/isaacsim-vla`
 
-There should not be an extra dated outer folder.
+There should not be an extra dated outer folder around the `33` workspace.
 
 ## Layout
 
@@ -122,7 +123,13 @@ Isaac Sim GUI for scene editing:
 You can also pass a custom stage path:
 
 ```bash
-./scripts/run_isaacsim_gui.sh /home/kaveh/project/isaacsim-vla /path/to/scene.usd
+./scripts/run_isaacsim_gui.sh /path/to/scene.usd
+```
+
+Or override the workspace root explicitly:
+
+```bash
+./scripts/run_isaacsim_gui.sh --root-dir /home/kaveh/projects/API/isaacsim-vla --stage-usd /path/to/scene.usd
 ```
 
 All wrappers default to:
