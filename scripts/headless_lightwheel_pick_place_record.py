@@ -55,6 +55,22 @@ def wait_for_stage_loading(simulation_app: SimulationApp, is_stage_loading: obje
     raise RuntimeError("Stage did not finish loading in time")
 
 
+def find_rigid_body_descendant_path(stage: object, root_path: str) -> str:
+    from pxr import UsdPhysics
+
+    root_prim = stage.GetPrimAtPath(root_path)
+    if not root_prim.IsValid():
+        return root_path
+
+    queue = [root_prim]
+    while queue:
+        prim = queue.pop(0)
+        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            return prim.GetPath().pathString
+        queue.extend(list(prim.GetChildren()))
+    return root_path
+
+
 class VideoWriter:
     def __init__(self, video_path: str, width: int, height: int, framerate: int) -> None:
         ffmpeg = shutil.which("ffmpeg")
@@ -173,8 +189,12 @@ def main() -> int:
         )
     )
 
-    add_reference_to_stage(args.prop_usd, "/World/benchmark_prop")
-    prop = SingleXFormPrim("/World/benchmark_prop", name="benchmark_prop", position=prop_drop_position)
+    prop_root_path = "/World/benchmark_prop"
+    add_reference_to_stage(args.prop_usd, prop_root_path)
+    prop_root = SingleXFormPrim(prop_root_path, name="benchmark_prop_root", position=prop_drop_position)
+    stage = omni.usd.get_context().get_stage()
+    tracked_prop_path = find_rigid_body_descendant_path(stage, prop_root_path)
+    tracked_prop = SingleXFormPrim(tracked_prop_path, name="benchmark_prop_tracked")
 
     camera_eye_start = np.array([-0.96, -1.94, 2.34], dtype=np.float64)
     camera_eye_end = np.array([-0.56, -1.66, 2.20], dtype=np.float64)
@@ -189,7 +209,8 @@ def main() -> int:
     )
 
     world.reset()
-    prop.initialize()
+    prop_root.initialize()
+    tracked_prop.initialize()
     camera.initialize()
     camera.set_focal_length(1.9)
     camera.set_clipping_range(0.01, 10000.0)
@@ -218,6 +239,7 @@ def main() -> int:
     print(f"robot_position={robot_position.tolist()}")
     print(f"pedestal_height={pedestal_height}")
     print(f"prop_drop_position={prop_drop_position.tolist()}")
+    print(f"tracked_prop_path={tracked_prop_path}")
     print(f"camera_eye_start={camera_eye_start.tolist()}")
     print(f"camera_eye_end={camera_eye_end.tolist()}")
     print(f"camera_target={camera_target.tolist()}")
@@ -232,7 +254,7 @@ def main() -> int:
     for lead_step in range(settle_max_steps):
         set_camera_view(eye=camera_eye_start, target=camera_target, camera_prim_path="/World/benchmark_camera")
         world.step(render=True)
-        current_prop_position, current_prop_orientation = prop.get_world_pose()
+        current_prop_position, current_prop_orientation = tracked_prop.get_world_pose()
         current_prop_position = np.asarray(current_prop_position, dtype=np.float64)
         current_prop_orientation = np.asarray(current_prop_orientation, dtype=np.float64)
         prop_position = current_prop_position.copy()
@@ -295,15 +317,16 @@ def main() -> int:
 
         if carrying:
             prop_position = candidate_prop_position
-            prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
+            tracked_prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
             hold_distance = np.linalg.norm(prop_position - hold_prop_position)
             if attach_step is not None and step - attach_step >= min_carry_steps and hold_distance <= hold_target_distance:
                 hold_done_step = step
                 done_step = step
                 break
         else:
-            prop_position = stable_prop_position.copy()
-            prop.set_world_pose(position=prop_position, orientation=stable_prop_orientation)
+            current_prop_position, current_prop_orientation = tracked_prop.get_world_pose()
+            prop_position = np.asarray(current_prop_position, dtype=np.float64)
+            stable_prop_orientation = np.asarray(current_prop_orientation, dtype=np.float64)
 
         if step % args.frame_stride == 0:
             rgb = get_rgb_frame(camera, args.width, args.height)
@@ -320,9 +343,9 @@ def main() -> int:
         if carrying:
             end_effector_position, end_effector_orientation = franka.end_effector.get_world_pose()
             prop_position = np.asarray(end_effector_position) + prop_offset
-            prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
+            tracked_prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
         else:
-            prop.set_world_pose(position=prop_position, orientation=stable_prop_orientation)
+            tracked_prop.set_world_pose(position=prop_position, orientation=stable_prop_orientation)
         rgb = get_rgb_frame(camera, args.width, args.height)
         if rgb is not None:
             video_writer.write(rgb)
