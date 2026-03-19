@@ -120,6 +120,8 @@ Isaac Sim GUI for scene editing:
 ./scripts/run_isaacsim_gui.sh
 ```
 
+The GUI launcher opens the default Lightwheel kitchen stage and auto-frames the main viewport on the loaded scene bounds so you land on the room instead of an arbitrary empty-looking camera view.
+
 You can also pass a custom stage path:
 
 ```bash
