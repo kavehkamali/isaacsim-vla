@@ -10,6 +10,8 @@ from isaacsim import SimulationApp
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage-usd", required=True)
+    parser.add_argument("--prop-usd")
+    parser.add_argument("--spawn-benchmark-pick-setup", action="store_true")
     args, _ = parser.parse_known_args()
     return args
 
@@ -69,6 +71,62 @@ def build_camera_path(min_pt: np.ndarray, max_pt: np.ndarray) -> tuple[np.ndarra
     return eye, target
 
 
+def spawn_benchmark_pick_setup(simulation_app: SimulationApp, prop_usd: str | None) -> None:
+    if not prop_usd:
+        raise RuntimeError("--prop-usd is required with --spawn-benchmark-pick-setup")
+
+    from isaacsim.core.api import World
+    from isaacsim.core.api.objects import FixedCuboid
+    from isaacsim.core.prims import SingleXFormPrim
+    from isaacsim.core.utils.numpy.rotations import euler_angles_to_quats
+    from isaacsim.core.utils.stage import add_reference_to_stage
+    from isaacsim.robot.manipulators.examples.franka import Franka
+
+    world = World(stage_units_in_meters=1.0)
+
+    pedestal_height = 0.62
+    robot_position = np.array([0.44, -0.50, pedestal_height], dtype=np.float64)
+    robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 72.0]), degrees=True)
+    pick_position = np.array([0.40, -0.28, 1.18], dtype=np.float64)
+    prop_stage_offset = np.array([0.0, 0.0, 1.22], dtype=np.float64)
+    prop_pick_position = pick_position + prop_stage_offset
+
+    world.scene.add(
+        FixedCuboid(
+            prim_path="/World/FrankaBase",
+            name="franka_base",
+            position=np.array([robot_position[0], robot_position[1], pedestal_height / 2.0], dtype=np.float64),
+            scale=np.array([0.40, 0.40, pedestal_height], dtype=np.float64),
+            size=1.0,
+            color=np.array([0.16, 0.18, 0.22]),
+        )
+    )
+
+    franka = world.scene.add(
+        Franka(
+            prim_path="/World/Franka",
+            name="lightwheel_franka",
+            position=robot_position,
+            orientation=robot_orientation,
+        )
+    )
+
+    add_reference_to_stage(prop_usd, "/World/benchmark_prop")
+    prop = SingleXFormPrim("/World/benchmark_prop", name="benchmark_prop", position=prop_pick_position)
+
+    world.reset()
+    prop.initialize()
+    franka.gripper.set_joint_positions(franka.gripper.joint_opened_positions)
+
+    for _ in range(30):
+        simulation_app.update()
+
+    print("spawned_benchmark_pick_setup=true")
+    print(f"robot_position={robot_position.tolist()}")
+    print(f"pick_position={pick_position.tolist()}")
+    print(f"prop_pick_position={prop_pick_position.tolist()}")
+
+
 def main() -> int:
     args = parse_args()
     simulation_app = SimulationApp({"headless": False})
@@ -84,6 +142,9 @@ def main() -> int:
         simulation_app.update()
         if not is_stage_loading():
             break
+
+    if args.spawn_benchmark_pick_setup:
+        spawn_benchmark_pick_setup(simulation_app, args.prop_usd)
 
     stage = omni.usd.get_context().get_stage()
     min_pt, max_pt, root_path = compute_root_bounds(stage)

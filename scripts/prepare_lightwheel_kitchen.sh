@@ -9,10 +9,27 @@ STAGE_USD="$LIGHTWHEEL_DIR/Collected_KitchenRoom/KitchenRoom.usd"
 PROP_USD="$LIGHTWHEEL_DIR/Collected_KitchenRoom/Kitchen_Other/Kitchen_Bottle.usd"
 LEGACY_STAGE_USD="$ROOT_DIR/third_party/assets/lightwheel_kitchen/Collected_KitchenRoom/KitchenRoom.usd"
 LEGACY_PROP_USD="$ROOT_DIR/third_party/assets/lightwheel_kitchen/Collected_KitchenRoom/Kitchen_Other/Kitchen_Bottle.usd"
+CHOPPINGBOARD_TEXTURE_DIR="$LIGHTWHEEL_DIR/Collected_KitchenRoom/InteractiveAsset/SM_P_Choppingboard_01/Collected_SM_P_Choppingboard_01/Props/Materials/Textures"
 
 mkdir -p "$LIGHTWHEEL_DIR"
 
+repair_lightwheel_aliases() {
+  if [[ -d "$CHOPPINGBOARD_TEXTURE_DIR" ]]; then
+    for texture_path in "$CHOPPINGBOARD_TEXTURE_DIR"/7443619-files-*.jpg; do
+      if [[ ! -f "$texture_path" ]]; then
+        continue
+      fi
+      texture_name="$(basename "$texture_path")"
+      compat_path="$CHOPPINGBOARD_TEXTURE_DIR/3d66Model-$texture_name"
+      if [[ ! -e "$compat_path" ]]; then
+        ln -s "$texture_name" "$compat_path"
+      fi
+    done
+  fi
+}
+
 if [[ -f "$STAGE_USD" && -f "$PROP_USD" ]]; then
+  repair_lightwheel_aliases
   printf 'LIGHTWHEEL_STAGE_USD=%q\n' "$STAGE_USD"
   printf 'LIGHTWHEEL_PROP_USD=%q\n' "$PROP_USD"
   exit 0
@@ -23,6 +40,7 @@ if [[ -f "$LIGHTWHEEL_ZIP" ]]; then
 fi
 
 if [[ -f "$STAGE_USD" && -f "$PROP_USD" ]]; then
+  repair_lightwheel_aliases
   printf 'LIGHTWHEEL_STAGE_USD=%q\n' "$STAGE_USD"
   printf 'LIGHTWHEEL_PROP_USD=%q\n' "$PROP_USD"
   exit 0

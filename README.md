@@ -122,6 +122,14 @@ Isaac Sim GUI for scene editing:
 
 The GUI launcher opens the default Lightwheel kitchen stage and auto-frames the main viewport on the loaded scene bounds so you land on the room instead of an arbitrary empty-looking camera view.
 
+Isaac Sim GUI with the benchmark pick setup from the scripted recording:
+
+```bash
+./scripts/run_isaacsim_gui_pick_setup.sh
+```
+
+That launcher opens the Lightwheel kitchen and spawns the same pedestal, Franka, and bottle placement used by the scripted countertop recording so you can tune the pose interactively.
+
 You can also pass a custom stage path:
 
 ```bash
