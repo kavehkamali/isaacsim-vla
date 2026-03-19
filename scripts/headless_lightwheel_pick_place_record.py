@@ -151,8 +151,8 @@ def main() -> int:
     world = World(stage_units_in_meters=1.0)
 
     pedestal_height = 0.62
-    robot_position = np.array([0.44, -0.50, pedestal_height], dtype=np.float64)
-    robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 72.0]), degrees=True)
+    robot_position = np.array([0.34, -0.22, pedestal_height], dtype=np.float64)
+    robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 92.0]), degrees=True)
     prop_drop_position = np.array([0.20, 0.0, 1.20], dtype=np.float64)
     prop_offset = np.array([0.0, 0.0, -0.07], dtype=np.float64)
     prop_rest_orientation = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
