@@ -5,13 +5,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 ISAACSIM_DIR="$ROOT_DIR/third_party/isaacsim"
 REPO_DIR="$ROOT_DIR"
-STAGE_USD="${2:-$ROOT_DIR/third_party/Lightwheel_Kitchen/Collected_KitchenRoom/KitchenRoom.usd}"
-PROP_USD="${3:-$ROOT_DIR/third_party/Lightwheel_Kitchen/Collected_KitchenRoom/Kitchen_Other/Kitchen_Bottle.usd}"
+DEFAULT_STAGE_USD="$ROOT_DIR/third_party/Lightwheel_Kitchen/Collected_KitchenRoom/KitchenRoom.usd"
+DEFAULT_PROP_USD="$ROOT_DIR/third_party/Lightwheel_Kitchen/Collected_KitchenRoom/Kitchen_Other/Kitchen_Bottle.usd"
+STAGE_USD="${2:-}"
+PROP_USD="${3:-}"
 OUTPUT_DIR="${4:-$ROOT_DIR/results/lightwheel_pick_place}"
 FRAMES_DIR="$OUTPUT_DIR/frames"
 VIDEO_PATH="$OUTPUT_DIR/lightwheel_pick_place.mp4"
 
 export CUDA_VISIBLE_DEVICES=0
+
+if [[ -z "$STAGE_USD" || -z "$PROP_USD" ]]; then
+  eval "$("$REPO_DIR/scripts/prepare_lightwheel_kitchen.sh" "$ROOT_DIR")"
+  STAGE_USD="${STAGE_USD:-${LIGHTWHEEL_STAGE_USD:-$DEFAULT_STAGE_USD}}"
+  PROP_USD="${PROP_USD:-${LIGHTWHEEL_PROP_USD:-$DEFAULT_PROP_USD}}"
+fi
 
 mkdir -p "$FRAMES_DIR"
 cd "$ISAACSIM_DIR"

@@ -62,15 +62,36 @@ That creates:
 - `logs/`
 - `results/`
 
-## Asset Extraction
+## First-Time Preparation
 
-Put downloaded zips into `third_party/downloads/`, then run:
+Put Isaac Sim and NVIDIA zips into `third_party/downloads/`.
+
+Put the Lightwheel kitchen zip at:
+
+`third_party/Lightwheel_Kitchen/Lightwheel_Kitchen.zip`
+
+Then run the full preparation flow:
 
 ```bash
-./scripts/extract_isaacsim.sh
-./scripts/extract_omniverse_packs.sh
-./scripts/build_simready_manifest.sh
+./scripts/prepare_workspace.sh
 ```
+
+That will:
+
+- create the canonical workspace folders
+- extract Isaac Sim into `third_party/isaacsim/`
+- extract NVIDIA packs into `third_party/assets/`
+- extract the Lightwheel kitchen zip if needed
+- build `results/simready_manifest.json`
+- run a preflight check so tests do not fail later from missing assets
+
+If you only want to verify the workspace state without changing it:
+
+```bash
+./scripts/check_workspace.sh
+```
+
+If the preflight fails, fix the missing archives it names and rerun `./scripts/prepare_workspace.sh`.
 
 ## Main Runs
 
@@ -98,6 +119,8 @@ All wrappers default to:
 - `GPU 0` only
 - `third_party/isaacsim/` for Isaac Sim
 - `third_party/Lightwheel_Kitchen/` for the Lightwheel kitchen scene
+
+The Lightwheel wrappers also auto-extract `third_party/Lightwheel_Kitchen/Lightwheel_Kitchen.zip` on first use if the kitchen USD tree is not already unpacked, but the recommended path is still to run `./scripts/prepare_workspace.sh` first.
 
 ## Config Notes
 
