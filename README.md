@@ -2,12 +2,9 @@
 
 Canonical source repo for Isaac Sim VLA experiments.
 
-The repo itself is the workspace when you run locally. Current machine-specific roots:
+The repo itself is the workspace when you run locally. Current canonical workspace root:
 
 - `home-linux`: `/home/kaveh/projects/API/isaacsim-vla`
-- `10.225.68.33`: `/home/kaveh/project/isaacsim-vla`
-
-There should not be an extra dated outer folder around the `33` workspace.
 
 ## Layout
 
@@ -38,14 +35,14 @@ git submodule update --init --recursive
 
 Isaac Sim is not handled as a git submodule. Keep it as an extracted vendor dependency under `third_party/isaacsim/`.
 
-The path is ignored by default so that an existing checkout on a machine like `33` does not dirty the repo.
+The path is ignored by default so that a local vendor checkout does not dirty the repo.
 
-## Remote Setup
+## Workspace Setup
 
-On `10.225.68.33` the canonical root should be:
+On `home-linux` the canonical root is:
 
 ```bash
-cd /home/kaveh/project/isaacsim-vla
+cd /home/kaveh/projects/API/isaacsim-vla
 ```
 
 Create the expected workspace folders:
