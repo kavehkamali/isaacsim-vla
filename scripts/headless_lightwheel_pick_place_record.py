@@ -140,18 +140,18 @@ def main() -> int:
     pedestal_height = 0.62
     robot_position = np.array([0.44, -0.50, pedestal_height], dtype=np.float64)
     robot_orientation = euler_angles_to_quats(np.array([0.0, 0.0, 72.0]), degrees=True)
-    pick_position = np.array([0.20, 0.0, 1.10], dtype=np.float64)
-    place_position = np.array([-0.16, 0.0, 1.10], dtype=np.float64)
-    prop_stage_offset = np.array([0.0, 0.0, 0.10], dtype=np.float64)
-    prop_pick_position = pick_position + prop_stage_offset
-    prop_place_position = place_position + prop_stage_offset
+    prop_drop_position = np.array([0.20, 0.0, 1.20], dtype=np.float64)
     prop_offset = np.array([0.0, 0.0, -0.07], dtype=np.float64)
     prop_rest_orientation = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
-    initial_capture_steps = 24
+    settle_max_steps = 90
+    settle_min_steps = 16
+    settle_position_delta = 0.0015
+    settle_required_stable_steps = 10
     pick_attach_distance = 0.055
-    place_release_distance = 0.045
     min_carry_steps = 12
-    post_release_hold_steps = 24
+    lift_height = 0.12
+    hold_target_distance = 0.03
+    post_lift_hold_steps = 30
 
     pedestal = world.scene.add(
         FixedCuboid(
@@ -174,7 +174,7 @@ def main() -> int:
     )
 
     add_reference_to_stage(args.prop_usd, "/World/benchmark_prop")
-    prop = SingleXFormPrim("/World/benchmark_prop", name="benchmark_prop", position=prop_pick_position)
+    prop = SingleXFormPrim("/World/benchmark_prop", name="benchmark_prop", position=prop_drop_position)
 
     camera_eye_start = np.array([-0.96, -1.94, 2.34], dtype=np.float64)
     camera_eye_end = np.array([-0.56, -1.66, 2.20], dtype=np.float64)
@@ -204,35 +204,48 @@ def main() -> int:
     )
     franka.gripper.set_joint_positions(franka.gripper.joint_opened_positions)
 
-    prop_position = prop_pick_position.copy()
+    prop_position = prop_drop_position.copy()
     carrying = False
-    released = False
+    stable_prop_position = prop_drop_position.copy()
+    stable_prop_orientation = prop_rest_orientation.copy()
     attach_step = None
-    release_done_step = None
+    hold_done_step = None
     done_step = None
     saved_frames = 0
     camera_travel_steps = 90
+    last_actions = None
 
     print(f"robot_position={robot_position.tolist()}")
     print(f"pedestal_height={pedestal_height}")
-    print(f"pick_position={pick_position.tolist()}")
-    print(f"place_position={place_position.tolist()}")
-    print(f"prop_pick_position={prop_pick_position.tolist()}")
-    print(f"prop_place_position={prop_place_position.tolist()}")
+    print(f"prop_drop_position={prop_drop_position.tolist()}")
     print(f"camera_eye_start={camera_eye_start.tolist()}")
     print(f"camera_eye_end={camera_eye_end.tolist()}")
     print(f"camera_target={camera_target.tolist()}")
-    print(f"initial_capture_steps={initial_capture_steps}")
     print(f"max_steps={args.max_steps}")
+    print(f"settle_max_steps={settle_max_steps}")
     print(f"pick_attach_distance={pick_attach_distance}")
-    print(f"place_release_distance={place_release_distance}")
     print(f"min_carry_steps={min_carry_steps}")
+    print(f"lift_height={lift_height}")
 
-    for lead_step in range(initial_capture_steps):
+    settle_counter = 0
+    last_settle_position = None
+    for lead_step in range(settle_max_steps):
         set_camera_view(eye=camera_eye_start, target=camera_target, camera_prim_path="/World/benchmark_camera")
-        prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
         world.step(render=True)
-        prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
+        current_prop_position, current_prop_orientation = prop.get_world_pose()
+        current_prop_position = np.asarray(current_prop_position, dtype=np.float64)
+        current_prop_orientation = np.asarray(current_prop_orientation, dtype=np.float64)
+        prop_position = current_prop_position.copy()
+        stable_prop_position = current_prop_position.copy()
+        stable_prop_orientation = current_prop_orientation.copy()
+
+        if last_settle_position is not None:
+            position_delta = np.linalg.norm(current_prop_position - last_settle_position)
+            if lead_step >= settle_min_steps and position_delta <= settle_position_delta:
+                settle_counter += 1
+            else:
+                settle_counter = 0
+        last_settle_position = current_prop_position.copy()
 
         if lead_step % args.frame_stride == 0:
             rgb = get_rgb_frame(camera, args.width, args.height)
@@ -242,6 +255,20 @@ def main() -> int:
                     Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
                 saved_frames += 1
 
+        if settle_counter >= settle_required_stable_steps:
+            break
+
+    pick_position = stable_prop_position - prop_offset
+    hold_position = pick_position.copy()
+    hold_position[2] += lift_height
+    hold_prop_position = stable_prop_position.copy()
+    hold_prop_position[2] += lift_height
+
+    print(f"stable_prop_position={stable_prop_position.tolist()}")
+    print(f"pick_position={pick_position.tolist()}")
+    print(f"hold_position={hold_position.tolist()}")
+    print(f"hold_prop_position={hold_prop_position.tolist()}")
+
     for step in range(args.max_steps):
         alpha = 0.0 if camera_travel_steps <= 0 else min(step / float(camera_travel_steps), 1.0)
         eye = (1.0 - alpha) * camera_eye_start + alpha * camera_eye_end
@@ -250,10 +277,11 @@ def main() -> int:
         current_joint_positions = franka.get_joint_positions()
         actions = controller.forward(
             picking_position=pick_position,
-            placing_position=place_position,
+            placing_position=hold_position,
             current_joint_positions=current_joint_positions,
             end_effector_offset=np.array([0.0, 0.005, 0.0]),
         )
+        last_actions = actions
         articulation_controller.apply_action(actions)
         world.step(render=True)
 
@@ -261,24 +289,21 @@ def main() -> int:
         candidate_prop_position = np.asarray(end_effector_position) + prop_offset
         pick_distance = np.linalg.norm(candidate_prop_position - prop_position)
 
-        if (not carrying) and (not released) and pick_distance <= pick_attach_distance:
+        if (not carrying) and pick_distance <= pick_attach_distance:
             carrying = True
             attach_step = step
 
-        if carrying and not released:
+        if carrying:
             prop_position = candidate_prop_position
             prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
-            place_distance = np.linalg.norm(prop_position - prop_place_position)
-            if attach_step is not None and step - attach_step >= min_carry_steps and place_distance <= place_release_distance:
-                released = True
-                carrying = False
-                release_done_step = step
-                prop_position = prop_place_position.copy()
-                prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
-        elif not released:
-            prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
+            hold_distance = np.linalg.norm(prop_position - hold_prop_position)
+            if attach_step is not None and step - attach_step >= min_carry_steps and hold_distance <= hold_target_distance:
+                hold_done_step = step
+                done_step = step
+                break
         else:
-            prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
+            prop_position = stable_prop_position.copy()
+            prop.set_world_pose(position=prop_position, orientation=stable_prop_orientation)
 
         if step % args.frame_stride == 0:
             rgb = get_rgb_frame(camera, args.width, args.height)
@@ -288,13 +313,16 @@ def main() -> int:
                     Image.fromarray(rgb).save(frames_dir / f"frame_{saved_frames:05d}.png")
                 saved_frames += 1
 
-        if release_done_step is not None and step >= release_done_step + post_release_hold_steps:
-            done_step = step
-            break
-
-    for _ in range(8):
+    for _ in range(post_lift_hold_steps):
+        if last_actions is not None:
+            articulation_controller.apply_action(last_actions)
         world.step(render=True)
-        prop.set_world_pose(position=prop_position, orientation=prop_rest_orientation)
+        if carrying:
+            end_effector_position, end_effector_orientation = franka.end_effector.get_world_pose()
+            prop_position = np.asarray(end_effector_position) + prop_offset
+            prop.set_world_pose(position=prop_position, orientation=end_effector_orientation)
+        else:
+            prop.set_world_pose(position=prop_position, orientation=stable_prop_orientation)
         rgb = get_rgb_frame(camera, args.width, args.height)
         if rgb is not None:
             video_writer.write(rgb)
@@ -305,8 +333,8 @@ def main() -> int:
     print(f"saved_frames={saved_frames}")
     print(f"controller_done_step={done_step}")
     print(f"attach_step={attach_step}")
-    print(f"release_done_step={release_done_step}")
-    print(f"released={released}")
+    print(f"hold_done_step={hold_done_step}")
+    print(f"carrying={carrying}")
     print(f"final_prop_position={prop_position.tolist()}")
 
     video_writer.close()
